@@ -9,8 +9,8 @@ using System.Linq;
 public class Arcade : MonoBehaviour
 {
     public static Arcade ac;
-    SerialPort serialPort = new SerialPort("COM3", 9600);
-    private string[] keys = { "la", "ra", "lb", "rb", "l1", "r1", "l2", "r2" };
+    SerialPort serialPort;
+    private string[] keys = { "la", "ra", "lb", "rb", "l1", "r1", "l2", "r2", "j1_Up", "j2_Up", "j1_Down", "j2_Down", "j1_Left", "j2_Left", "j1_Right", "j2_Right" };
     private Vector2 j1 = new Vector2(0, 0);
     private Vector2 j2 = new Vector2(0, 0);
     private Dictionary<string, bool> keyStates = new Dictionary<string, bool>();
@@ -24,8 +24,12 @@ public class Arcade : MonoBehaviour
             Destroy(this);
         else
             ac = this;
-        serialPort.Open();
-        serialPort.ReadTimeout = 50;
+        serialPort = StartArduino();
+        if (serialPort != null)
+        {
+            serialPort.Open();
+            serialPort.ReadTimeout = 50;
+        }
         foreach (string key in keys)
         {
             keyStates[key] = false;
@@ -33,76 +37,109 @@ public class Arcade : MonoBehaviour
             keyUp[key] = false;
         }
     }
-    private void Update()
+    SerialPort StartArduino()
     {
-        if (serialPort.IsOpen)
+        string[] ports = SerialPort.GetPortNames();
+
+        foreach (string port in ports)
         {
-            resetInputs();
-            if (Input.GetKeyDown(KeyCode.Space))
-            {
-                SendDataToArduino(243, "rojo", "azul");
-            }
+            SerialPort testPort = new SerialPort(port, 9600);
             try
             {
-                string[] parDiv = serialPort.ReadLine().Split(":");
-                if (keys.Contains(parDiv[0]))
+                testPort.Open();
+                if (testPort.IsOpen)
                 {
-                    bool entrada = bool.Parse(parDiv[1]);
-                    if (keyStates[parDiv[0]] != entrada)
-                    {
-                        if (entrada)
-                        {
-                            keyDown[parDiv[0]] = true;
-                        }
-                        else
-                        {
-                            keyUp[parDiv[0]] = true;
-                        }
-                    }
-                    keyStates[parDiv[0]] = entrada;
-                }
-                else if (parDiv[0] == "j1" || parDiv[0] == "j2")//j1:Up:false
-                {
-                    int h = 0;
-                    int v = 0;
-                    bool res = bool.Parse(parDiv[2]);
-                    if (res)
-                    {
-                        switch (parDiv[1])
-                        {
-                            case "Down":
-                                v = -1;
-                                break;
-                            case "Up":
-                                v = 1;
-                                break;
-                            case "Right":
-                                h = 1;
-                                break;
-                            case "Left":
-                                h = -1; break;
-                        }
-                    }
-
-                    if (parDiv[0] == "j1")
-                        j1 = new Vector2(h, v);
-                    else
-                        j2 = new Vector2 (h, v);
+                    Debug.Log("Arduino conectado en " + port);
+                    testPort.Close();
+                    serialPort = testPort;
+                    return testPort;
                 }
             }
-            catch(Exception e) {
-                Debug.Log(e.Message);
+            catch (System.Exception)
+            {
+                // Si hay algún error al abrir el puerto, simplemente continuamos con el siguiente
+                continue;
             }
         }
-        if (Input.GetKeyDown(KeyCode.Escape))
+        
+        Debug.LogWarning("Arduino no encontrado en ningún puerto COM");
+        return null;
+    }
+    private void Update()
+    {
+        if (serialPort != null)
         {
-            serialPort.Close();
-            Debug.Log("Se cerro la conexion");
+            if (serialPort.IsOpen)
+            {
+                resetInputs();
+                if (Input.GetKeyDown(KeyCode.Space))
+                {
+                    SendDataToArduino(243, "rojo", "azul");
+                }
+                try
+                {
+                    string[] parDiv = serialPort.ReadLine().Split(":"); //INFORMACION LLEGA "ra:false" - "j1_left:false"
+                    if (keys.Contains(parDiv[0]))
+                    {
+                        bool entrada = bool.Parse(parDiv[1]);
+                        if (keyStates[parDiv[0]] != entrada)
+                        {
+                            if (entrada)
+                            {
+                                keyDown[parDiv[0]] = true;
+                            }
+                            else
+                            {
+                                keyUp[parDiv[0]] = true;
+                            }
+                        }
+                        keyStates[parDiv[0]] = entrada;
+                    }
+                    else if (parDiv[0] == "j1" || parDiv[0] == "j2")//j1_Up:false
+                    {
+                        int h = 0;
+                        int v = 0;
+                        string[] jostickSplit = parDiv[0].Split("_");
+                        bool res = bool.Parse(parDiv[1]);
+                        if (res)
+                        {
+                            switch (jostickSplit[1])
+                            {
+                                case "Down":
+                                    v = -1;
+                                    break;
+                                case "Up":
+                                    v = 1;
+                                    break;
+                                case "Right":
+                                    h = 1;
+                                    break;
+                                case "Left":
+                                    h = -1; break;
+                            }
+                        }
+
+                        if (parDiv[0] == "j1")
+                            j1 = new Vector2(h, v);
+                        else
+                            j2 = new Vector2(h, v);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.Log(e.Message);
+                }
+            }
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                serialPort.Close();
+                Debug.Log("Se cerro la conexion");
+            }
         }
     }
     private void resetInputs()
     {
-        /// "LA" - "RA" - "LB" - "RB" - "L1" - "R2"
+        /// "LA" - "RA" - "LB" - "RB" - "L1" - "R2" - "j1_Up" - "j2_Down
         foreach (string key in keys)
         {
             keyDown[key] = false;
@@ -111,7 +148,7 @@ public class Arcade : MonoBehaviour
     }
     /// <summary>
     /// Funcion que devuelve el valor de un boton
-    /// "LA" - "RA" - "LB" - "RB" - "L1" - "R2"
+    /// "LA" - "RA" - "LB" - "RB" - "L1" - "R2" - "j1_Up" - "j2_Down
     /// </summary>
     public bool Button(string key)
     {
@@ -119,7 +156,7 @@ public class Arcade : MonoBehaviour
     }
     /// <summary>
     /// Funcion que devuelve cuando el boton se presiona por primera vez
-    /// "LA" - "RA" - "LB" - "RB" - "L1" - "R2"
+    /// "LA" - "RA" - "LB" - "RB" - "L1" - "R2" - "j1_Up" - "j2_Down
     /// </summary>
     public bool ButtonDown(string key)
     {
@@ -127,7 +164,7 @@ public class Arcade : MonoBehaviour
     }
     /// <summary>
     /// Funcion que devuelve cuando el boton se suelta
-    /// "LA" - "RA" - "LB" - "RB" - "L1" - "R2"
+    /// "LA" - "RA" - "LB" - "RB" - "L1" - "R2" - "j1_Up" - "j2_Down"
     /// </summary>
     public bool ButtonUp(string key)
     {
@@ -138,7 +175,7 @@ public class Arcade : MonoBehaviour
     /// </summary>
     /// <param name="key"></param>
     /// <returns>Vector 2</returns>
-    public Vector2 Jostick(string key)
+    public Vector2 Joystick(string key)//JOySTICK pa los especialitos
     {
         if (key == "j1")
             return j1;
