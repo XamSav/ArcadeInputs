@@ -9,7 +9,7 @@ using System.Linq;
 public class Arcade : MonoBehaviour
 {
     public static Arcade ac;
-    SerialPort serialPort;
+    SerialPort serialPort = new SerialPort("COM3", 9600);
     private string[] keys = { "la", "ra", "lb", "rb", "l1", "r1", "l2", "r2", "j1_Up", "j2_Up", "j1_Down", "j2_Down", "j1_Left", "j2_Left", "j1_Right", "j2_Right" };
     private Vector2 j1 = new Vector2(0, 0);
     private Vector2 j2 = new Vector2(0, 0);
@@ -24,12 +24,12 @@ public class Arcade : MonoBehaviour
             Destroy(this);
         else
             ac = this;
-        serialPort = StartArduino();
+        /*serialPort = StartArduino();
         if (serialPort != null)
-        {
+        {*/
             serialPort.Open();
             serialPort.ReadTimeout = 50;
-        }
+        //}
         foreach (string key in keys)
         {
             keyStates[key] = false;
@@ -37,7 +37,7 @@ public class Arcade : MonoBehaviour
             keyUp[key] = false;
         }
     }
-    SerialPort StartArduino()
+    /*SerialPort StartArduino()
     {
         string[] ports = SerialPort.GetPortNames();
 
@@ -64,7 +64,7 @@ public class Arcade : MonoBehaviour
         
         Debug.LogWarning("Arduino no encontrado en ningún puerto COM");
         return null;
-    }
+    }*/
     private void Update()
     {
         if (serialPort != null)
@@ -95,34 +95,36 @@ public class Arcade : MonoBehaviour
                         }
                         keyStates[parDiv[0]] = entrada;
                     }
-                    else if (parDiv[0] == "j1" || parDiv[0] == "j2")//j1_Up:false
+                    else
                     {
-                        int h = 0;
-                        int v = 0;
-                        string[] jostickSplit = parDiv[0].Split("_");
-                        bool res = bool.Parse(parDiv[1]);
-                        if (res)
+                        string[] josti = parDiv[0].Split("_");
+                        if (josti[0] == "j1" || josti[0] == "j2")//j1_Up:false
                         {
-                            switch (jostickSplit[1])
+                            int h = 0;
+                            int v = 0;
+                            bool res = bool.Parse(parDiv[1]);
+                            if (res)
                             {
-                                case "Down":
-                                    v = -1;
-                                    break;
-                                case "Up":
-                                    v = 1;
-                                    break;
-                                case "Right":
-                                    h = 1;
-                                    break;
-                                case "Left":
-                                    h = -1; break;
+                                switch (josti[1])
+                                {
+                                    case "Down":
+                                        v = -1;
+                                        break;
+                                    case "Up":
+                                        v = 1;
+                                        break;
+                                    case "Right":
+                                        h = 1;
+                                        break;
+                                    case "Left":
+                                        h = -1; break;
+                                }
                             }
+                            if (josti[0] == "j1")
+                                j1 = new Vector2(h, v);
+                            else
+                                j2 = new Vector2(h, v);
                         }
-
-                        if (parDiv[0] == "j1")
-                            j1 = new Vector2(h, v);
-                        else
-                            j2 = new Vector2(h, v);
                     }
                 }
                 catch (Exception e)
