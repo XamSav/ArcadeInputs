@@ -11,7 +11,7 @@ public class Arcade : MonoBehaviour
 {
     public static Arcade ac;
     SerialPort serialPort = new SerialPort("COM3", 9600);
-    private string[] keys = { "la", "ra", "lb", "rb", "l1", "r1", "l2", "r2", "j1_Up", "j2_Up", "j1_Down", "j2_Down", "j1_Left", "j2_Left", "j1_Right", "j2_Right" };
+    private string[] keys = { "la", "ra", "lb", "rb", "l1", "r1", "l2", "r2", "j1_Up", "j2_Up", "j1_Down", "j2_Down", "j1_Left", "j2_Left", "j1_Right", "j2_Right", "start", "select"};
     private Vector2 j1 = new Vector2(0, 0);
     private Vector2 j2 = new Vector2(0, 0);
     private Dictionary<string, bool> keyStates = new Dictionary<string, bool>();
