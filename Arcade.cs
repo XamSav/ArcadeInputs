@@ -5,6 +5,7 @@ using System.IO.Ports; //Tutorial para tontos: Herramientas -> Administrador de 
                        // Buscar o Ctrl + L -> System.io.ports -> INSTALAR Y REINICIAR VISUAL STUDIO COMUNITY
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 public class Arcade : MonoBehaviour
 {
@@ -27,8 +28,10 @@ public class Arcade : MonoBehaviour
         /*serialPort = StartArduino();
         if (serialPort != null)
         {*/
-            serialPort.Open();
-            serialPort.ReadTimeout = 50;
+        
+        serialPort.Open();
+        serialPort.ReadTimeout = 50;
+        
         //}
         foreach (string key in keys)
         {
@@ -36,37 +39,11 @@ public class Arcade : MonoBehaviour
             keyDown[key] = false;
             keyUp[key] = false;
         }
+        Call();
     }
-    /*SerialPort StartArduino()
+    async private void Call()
     {
-        string[] ports = SerialPort.GetPortNames();
-
-        foreach (string port in ports)
-        {
-            SerialPort testPort = new SerialPort(port, 9600);
-            try
-            {
-                testPort.Open();
-                if (testPort.IsOpen)
-                {
-                    Debug.Log("Arduino conectado en " + port);
-                    testPort.Close();
-                    serialPort = testPort;
-                    return testPort;
-                }
-            }
-            catch (System.Exception)
-            {
-                // Si hay algún error al abrir el puerto, simplemente continuamos con el siguiente
-                continue;
-            }
-        }
-        
-        Debug.LogWarning("Arduino no encontrado en ningún puerto COM");
-        return null;
-    }*/
-    private void Update()
-    {
+        Debug.Log("Call");
         if (serialPort != null)
         {
             if (serialPort.IsOpen)
@@ -79,6 +56,7 @@ public class Arcade : MonoBehaviour
                 try
                 {
                     string[] parDiv = serialPort.ReadLine().Split(":"); //INFORMACION LLEGA "ra:false" - "j1_left:false"
+                    Debug.Log(parDiv);
                     if (keys.Contains(parDiv[0]))
                     {
                         bool entrada = bool.Parse(parDiv[1]);
@@ -138,6 +116,7 @@ public class Arcade : MonoBehaviour
                 Debug.Log("Se cerro la conexion");
             }
         }
+        await Task.Delay(50);
     }
     private void resetInputs()
     {
