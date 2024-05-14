@@ -117,6 +117,7 @@ public class Arcade : MonoBehaviour
             }
         }
         await Task.Delay(50);
+        Call();
     }
     private void resetInputs()
     {
