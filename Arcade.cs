@@ -102,6 +102,7 @@ public class Arcade : MonoBehaviour
                 Debug.Log(e.Message);
             }
         }
+        // CIERRE DE CONEXION CON LA TECLA ESC
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             serialPort.Close();
@@ -159,9 +160,7 @@ public class Arcade : MonoBehaviour
     }
     void SendDataToArduino(int porcentaje, string texto1, string texto2)
     {
-        string message = porcentaje.ToString() + "," + texto1 + "," + texto2 + "\n";
-
-        serialPort.Write(message);
+        serialPort.Write(texto1+ "\n");
     }
     void OnDestroy()
     {
