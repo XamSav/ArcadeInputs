@@ -25,14 +25,8 @@ public class Arcade : MonoBehaviour
             Destroy(this);
         else
             ac = this;
-        /*serialPort = StartArduino();
-        if (serialPort != null)
-        {*/
-        
         serialPort.Open();
         serialPort.ReadTimeout = 50;
-        
-        //}
         foreach (string key in keys)
         {
             keyStates[key] = false;
@@ -44,77 +38,74 @@ public class Arcade : MonoBehaviour
     async private void Call()
     {
         Debug.Log("Call");
-        if (serialPort != null)
+        if (serialPort.BytesToRead > 0)
         {
-            if (serialPort.IsOpen)
+            resetInputs();
+            if (Input.GetKeyDown(KeyCode.Space))
             {
-                resetInputs();
-                if (Input.GetKeyDown(KeyCode.Space))
+                SendDataToArduino(243, "rojo", "azul");
+            }
+            try
+            {
+                string[] parDiv = serialPort.ReadLine().Split(":"); //INFORMACION LLEGA "ra:false" - "j1_left:false"
+                Debug.Log(parDiv);
+                if (keys.Contains(parDiv[0]))
                 {
-                    SendDataToArduino(243, "rojo", "azul");
-                }
-                try
-                {
-                    string[] parDiv = serialPort.ReadLine().Split(":"); //INFORMACION LLEGA "ra:false" - "j1_left:false"
-                    Debug.Log(parDiv);
-                    if (keys.Contains(parDiv[0]))
+                    bool entrada = bool.Parse(parDiv[1]);
+                    if (keyStates[parDiv[0]] != entrada)
                     {
-                        bool entrada = bool.Parse(parDiv[1]);
-                        if (keyStates[parDiv[0]] != entrada)
+                        if (entrada)
                         {
-                            if (entrada)
-                            {
-                                keyDown[parDiv[0]] = true;
-                            }
-                            else
-                            {
-                                keyUp[parDiv[0]] = true;
-                            }
+                            keyDown[parDiv[0]] = true;
                         }
-                        keyStates[parDiv[0]] = entrada;
-                    }
-                    else
-                    {
-                        string[] josti = parDiv[0].Split("_");
-                        if (josti[0] == "j1" || josti[0] == "j2")//j1_Up:false
+                        else
                         {
-                            int h = 0;
-                            int v = 0;
-                            bool res = bool.Parse(parDiv[1]);
-                            if (res)
-                            {
-                                switch (josti[1])
-                                {
-                                    case "Down":
-                                        v = -1;
-                                        break;
-                                    case "Up":
-                                        v = 1;
-                                        break;
-                                    case "Right":
-                                        h = 1;
-                                        break;
-                                    case "Left":
-                                        h = -1; break;
-                                }
-                            }
-                            if (josti[0] == "j1")
-                                j1 = new Vector2(h, v);
-                            else
-                                j2 = new Vector2(h, v);
+                            keyUp[parDiv[0]] = true;
                         }
                     }
+                    keyStates[parDiv[0]] = entrada;
                 }
-                catch (Exception e)
+                else
                 {
-                    Debug.Log(e.Message);
+                    string[] josti = parDiv[0].Split("_");
+                    if (josti[0] == "j1" || josti[0] == "j2")//j1_Up:false
+                    {
+                        int h = 0;
+                        int v = 0;
+                        bool res = bool.Parse(parDiv[1]);
+                        if (res)
+                        {
+                            switch (josti[1])
+                            {
+                                case "Down":
+                                    v = -1;
+                                    break;
+                                case "Up":
+                                    v = 1;
+                                    break;
+                                case "Right":
+                                    h = 1;
+                                    break;
+                                case "Left":
+                                    h = -1; break;
+                            }
+                        }
+                        if (josti[0] == "j1")
+                            j1 = new Vector2(h, v);
+                        else
+                            j2 = new Vector2(h, v);
+                    }
                 }
             }
-            if (Input.GetKeyDown(KeyCode.Escape))
+            catch (Exception e)
             {
-                serialPort.Close();
-                Debug.Log("Se cerro la conexion");
+                Debug.Log(e.Message);
             }
+        }
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            serialPort.Close();
+            Debug.Log("Se cerro la conexion");
         }
         await Task.Delay(50);
         Call();
